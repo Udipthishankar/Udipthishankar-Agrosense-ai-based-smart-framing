@@ -1,0 +1,6 @@
+{
+  "name": "AgroSense - Smart Farming Assistant",
+  "description": "AI-based smart farming assistant providing crop recommendations, plant disease detection, agricultural weather intelligence, and farmer guidance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

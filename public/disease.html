@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroSense - Plant Disease Detection</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .upload-box {
+            border: 2px dashed #a5d6a7;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+            background: #fafafa;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .upload-box:hover {
+            background: #f1f8f1;
+        }
+        .preview-container {
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+        .preview-container img {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">🌿 AgroSense</div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="crop.html">Crop AI</a>
+            <a href="disease.html" class="active">Disease Detection</a>
+            <a href="weather.html">Weather</a>
+            <a href="about.html">About</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2 class="page-title">Leaf Disease Detection</h2>
+        <p style="text-align: center; margin-bottom: 25px; color: #666;">
+            Upload a clear photo of an affected plant leaf to diagnose pathogens and receive treatment guidance.
+        </p>
+        
+        <form id="diseaseForm">
+            <div class="upload-box" onclick="document.getElementById('leafImage').click()">
+                <p style="font-weight: 600; color: #2e7d32; margin-bottom: 5px;">📁 Click to Upload Leaf Image</p>
+                <p style="font-size: 0.85rem; color: #777;">Supports JPG, PNG formats</p>
+                <input type="file" id="leafImage" accept="image/*" style="display: none;" required>
+            </div>
+
+            <div class="preview-container" id="previewContainer">
+                <p style="font-weight: bold; margin-bottom: 8px; color: #444;">Selected Image Preview:</p>
+                <img id="imagePreview" src="" alt="Leaf Preview">
+            </div>
+
+            <button type="submit" id="analyzeBtn" class="btn" style="margin-top: 15px;">Analyze Plant Health</button>
+        </form>
+
+        <div id="diseaseResultCard" class="result-card">
+            <h3>🔬 Diagnostic Results:</h3>
+            <p><strong>Detected Condition:</strong> <span id="diseaseName" style="color: #c62828;">-</span></p>
+            <p style="margin-top: 8px;"><strong>Recommended Treatment:</strong> <span id="treatmentText" style="color: #333;">-</span></p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 AgroSense. Empowering modern agriculture.</p>
+    </footer>
+
+    <script>
+        // Image preview logic
+        const leafInput = document.getElementById('leafImage');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const diseaseForm = document.getElementById('diseaseForm');
+        const diseaseResultCard = document.getElementById('diseaseResultCard');
+        const diseaseName = document.getElementById('diseaseName');
+        const treatmentText = document.getElementById('treatmentText');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        leafInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Backend API call for disease detection
+        const API_BASE_URL = '/api';
+        
+        diseaseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!leafInput.files[0]) {
+                alert('Please select an image');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', leafInput.files[0]);
+            
+            try {
+                analyzeBtn.textContent = 'Analyzing...';
+                analyzeBtn.disabled = true;
+                
+                const response = await fetch(`${API_BASE_URL}/disease/detect`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // Display results
+                diseaseName.textContent = result.disease;
+                treatmentText.innerHTML = 
+                    `<strong>Condition:</strong> ${result.description}<br><br>
+                     <strong>Treatment:</strong> ${result.treatment}<br><br>
+                     <strong>Severity:</strong> ${result.severity}<br>
+                     <strong>Confidence:</strong> ${(result.confidence * 100).toFixed(1)}%`;
+                
+                diseaseResultCard.style.display = 'block';
+                diseaseResultCard.scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to analyze image. Make sure backend is running on http://localhost:5000');
+            } finally {
+                analyzeBtn.textContent = 'Analyze Plant Health';
+                analyzeBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

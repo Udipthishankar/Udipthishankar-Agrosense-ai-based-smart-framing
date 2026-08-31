@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroSense - About Us</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .about-section {
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        .about-section h3 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">🌿 AgroSense</div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="crop.html">Crop AI</a>
+            <a href="disease.html">Disease Detection</a>
+            <a href="weather.html">Weather</a>
+            <a href="about.html" class="active">About</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2 class="page-title">About AgroSense</h2>
+        
+        <div class="about-section">
+            <h3>Our Mission</h3>
+            <p>AgroSense is an advanced smart agriculture platform designed to bridge the gap between traditional farming practices and modern artificial intelligence. We aim to maximize crop yields, minimize agricultural loss from plant diseases, and provide data-backed decisions for farmers.</p>
+
+            <h3>Core Technologies</h3>
+            <ul style="margin-left: 20px; margin-top: 5px;">
+                <li><strong>Machine Learning:</strong> Predictive classification algorithms analyzing soil metrics (N, P, K, pH) and climate parameters.</li>
+                <li><strong>Full-Stack Architecture:</strong> Built using responsive web design principles, Node.js gateway routing, and Python inference pipelines.</li>
+                <li><strong>Interactive UI:</strong> Clean, mobile-friendly interfaces tailored for fast data entry in the field.</li>
+            </ul>
+
+            <h3 style="margin-top: 25px;">Contact Support / Feedback</h3>
+            <form id="contactForm" class="form-grid" style="margin-top: 10px;" onsubmit="handleContact(event)">
+                <div class="form-group">
+                    <label>Your Name:</label>
+                    <input type="text" id="contactName" required placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label>Email Address:</label>
+                    <input type="email" id="contactEmail" required placeholder="name@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Message / Query:</label>
+                    <textarea id="contactMsg" rows="4" required placeholder="How can we help you?"></textarea>
+                </div>
+                <button type="submit" class="btn">Send Message</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 AgroSense. Empowering modern agriculture.</p>
+    </footer>
+
+    <script>
+        function handleContact(e) {
+            e.preventDefault();
+            alert('Thank you! Your message has been sent successfully to the AgroSense team.');
+            document.getElementById('contactForm').reset();
+        }
+    </script>
+</body>
+</html>
