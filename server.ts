@@ -539,6 +539,45 @@ app.delete("/api/records/:id", (req, res) => {
   }
 });
 
+// Helper to automatically record chat advisories
+function autoSaveChatAdvisory(question: string, reply: string) {
+  try {
+    const records = readRecords();
+    const lower = (question + " " + reply).toLowerCase();
+    let detectedCrop = "General Advisory";
+    if (lower.includes("rice") || lower.includes("paddy")) detectedCrop = "Rice";
+    else if (lower.includes("wheat")) detectedCrop = "Wheat";
+    else if (lower.includes("cotton")) detectedCrop = "Cotton";
+    else if (lower.includes("sugarcane")) detectedCrop = "Sugarcane";
+    else if (lower.includes("maize") || lower.includes("corn")) detectedCrop = "Maize";
+    else if (lower.includes("ragi")) detectedCrop = "Ragi";
+    else if (lower.includes("tomato")) detectedCrop = "Tomato";
+    else if (lower.includes("leaf rust") || lower.includes("disease") || lower.includes("blight") || lower.includes("spot")) detectedCrop = "Disease Diagnosis";
+    else if (lower.includes("fertilizer") || lower.includes("npk") || lower.includes("urea") || lower.includes("dap")) detectedCrop = "Fertilizer Schedule";
+    else if (lower.includes("irrigation") || lower.includes("water") || lower.includes("drip")) detectedCrop = "Irrigation Management";
+
+    const newRecord = {
+      id: records.length > 0 ? Math.max(...records.map((r: { id?: number }) => r.id || 0)) + 1 : 1,
+      location: "Farmer Help Chat",
+      crop: detectedCrop,
+      timestamp: new Date().toISOString(),
+      details: {
+        source: "Farmer Chat",
+        question: question.trim(),
+        advice: reply.trim(),
+        notes: `Farmer Query: "${question.trim()}"`,
+      },
+    };
+
+    records.unshift(newRecord);
+    writeRecords(records);
+    return newRecord;
+  } catch (err) {
+    console.error("Failed to auto-save chat advisory:", err);
+    return null;
+  }
+}
+
 // ==================== AI FARMER ASSISTANT CHAT API ====================
 app.post("/api/chat", async (req, res) => {
   try {
@@ -571,7 +610,8 @@ Give practical, clear, actionable advice in friendly, supportive language suitab
         });
 
         if (response.text) {
-          return res.json({ reply: response.text });
+          const autoSavedRecord = autoSaveChatAdvisory(message, response.text);
+          return res.json({ reply: response.text, autoSavedRecord });
         }
       } catch (geminiError) {
         console.warn("Gemini chat fallback:", geminiError);
@@ -594,7 +634,8 @@ Give practical, clear, actionable advice in friendly, supportive language suitab
       reply = "🐛 **Pest Management Strategy**:\n- Install yellow sticky traps for whiteflies and aphids.\n- Use pheromone traps to monitor stem borers and fruit flies.\n- Apply Bacillus thuringiensis (Bt) or neem-based formulations early in the infestation cycle.";
     }
 
-    return res.json({ reply });
+    const autoSavedRecord = autoSaveChatAdvisory(message, reply);
+    return res.json({ reply, autoSavedRecord });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return res.status(500).json({ error: message });

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MessageSquareText, X, Send, Sparkles, Bot, User, BookmarkPlus, Check, ExternalLink } from "lucide-react";
+import { MessageSquareText, X, Send, Sparkles, Bot, User, Check, ExternalLink, BookOpen } from "lucide-react";
 import { ChatMessage } from "../types";
 
 interface ChatWidgetProps {
@@ -12,14 +12,13 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onNavigateToRecords }) =
     {
       id: "welcome",
       sender: "bot",
-      text: "Namaste! 🙏 I am your AgroSense smart farming assistant. Ask me anything about crop recommendations, fertilizer schedules (NPK), leaf disease treatments, or irrigation planning!",
+      text: "Namaste! 🙏 I am your AgroSense smart farming assistant. Ask me anything about crop recommendations, fertilizer schedules (NPK), leaf disease treatments, or irrigation planning!\n\n✨ *Every consultation is automatically saved to your Field Records for future reference.*",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [savedMessageIds, setSavedMessageIds] = useState<Record<string, boolean>>({});
-  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [autoSavedNotice, setAutoSavedNotice] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const quickPrompts = [
@@ -77,6 +76,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onNavigateToRecords }) =
       };
 
       setMessages((prev) => [...prev, botMsg]);
+      setAutoSavedNotice(true);
+      setTimeout(() => setAutoSavedNotice(false), 4000);
     } catch (err) {
       console.error("Chat error:", err);
       const fallbackMsg: ChatMessage = {
@@ -88,53 +89,6 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onNavigateToRecords }) =
       setMessages((prev) => [...prev, fallbackMsg]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSaveRecommendation = async (botMsgId: string, botText: string) => {
-    // Find preceding user question if available
-    const msgIndex = messages.findIndex((m) => m.id === botMsgId);
-    let questionText = "Farmer AI Advisory";
-    if (msgIndex > 0 && messages[msgIndex - 1].sender === "user") {
-      questionText = messages[msgIndex - 1].text;
-    }
-
-    // Determine crop or title
-    let detectedCrop = "General Advisory";
-    const lower = (questionText + " " + botText).toLowerCase();
-    if (lower.includes("rice") || lower.includes("paddy")) detectedCrop = "Rice";
-    else if (lower.includes("wheat")) detectedCrop = "Wheat";
-    else if (lower.includes("cotton")) detectedCrop = "Cotton";
-    else if (lower.includes("sugarcane")) detectedCrop = "Sugarcane";
-    else if (lower.includes("maize") || lower.includes("corn")) detectedCrop = "Maize";
-    else if (lower.includes("ragi")) detectedCrop = "Ragi";
-    else if (lower.includes("tomato")) detectedCrop = "Tomato";
-    else if (lower.includes("leaf rust") || lower.includes("disease") || lower.includes("blight")) detectedCrop = "Disease Treatment";
-    else if (lower.includes("fertilizer") || lower.includes("npk") || lower.includes("urea")) detectedCrop = "Fertilizer Schedule";
-
-    try {
-      const res = await fetch("/api/records/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: "Farmer AI Chat Log",
-          crop: detectedCrop,
-          details: {
-            source: "Farmer Chat",
-            question: questionText,
-            advice: botText,
-            notes: `Question: "${questionText}"\nAdvice: ${botText.slice(0, 180)}...`,
-          },
-        }),
-      });
-
-      if (res.ok) {
-        setSavedMessageIds((prev) => ({ ...prev, [botMsgId]: true }));
-        setSaveStatus("Saved to Field Records! View in Records tab.");
-        setTimeout(() => setSaveStatus(null), 4000);
-      }
-    } catch (err) {
-      console.error("Failed to save chat recommendation:", err);
     }
   };
 
@@ -157,7 +111,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onNavigateToRecords }) =
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-80 sm:w-96 h-[500px] bg-white rounded-3xl shadow-2xl border border-emerald-200/80 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="w-80 sm:w-96 h-[520px] bg-white rounded-3xl shadow-2xl border border-emerald-200/80 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
           {/* Top Bar */}
           <div className="bg-emerald-800 text-white px-4 py-3 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2.5">
@@ -168,25 +122,40 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onNavigateToRecords }) =
                 <h4 className="font-bold text-sm leading-tight">AgroSense Assistant</h4>
                 <p className="text-[11px] text-emerald-200 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-                  AI Farming Support
+                  Auto-syncing to Field Records
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-emerald-200 hover:text-white p-1 rounded-lg hover:bg-emerald-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {onNavigateToRecords && (
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    onNavigateToRecords();
+                  }}
+                  title="View Field Records"
+                  className="text-emerald-200 hover:text-white px-2 py-1 rounded-lg hover:bg-emerald-700 text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Records</span>
+                </button>
+              )}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-emerald-200 hover:text-white p-1 rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Save Status Notification Banner */}
-          {saveStatus && (
-            <div className="bg-emerald-100/90 text-emerald-900 text-[11px] px-3.5 py-1.5 flex items-center justify-between border-b border-emerald-200 font-medium">
+          {/* Auto-Save Notice Banner */}
+          {autoSavedNotice && (
+            <div className="bg-emerald-50 text-emerald-900 text-[11px] px-3.5 py-1.5 flex items-center justify-between border-b border-emerald-200 font-medium animate-in fade-in duration-150">
               <div className="flex items-center gap-1.5">
                 <Check className="w-3.5 h-3.5 text-emerald-700" />
-                <span>{saveStatus}</span>
+                <span>Auto-saved advice to Field Records!</span>
               </div>
               {onNavigateToRecords && (
                 <button
@@ -218,38 +187,24 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ onNavigateToRecords }) =
                 </div>
 
                 <div
-                  className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-sm leading-relaxed ${
+                  className={`max-w-[84%] rounded-2xl px-3.5 py-2.5 shadow-sm leading-relaxed ${
                     msg.sender === "user"
                       ? "bg-emerald-700 text-white rounded-tr-none"
-                      : "bg-white text-gray-800 border border-emerald-100 rounded-tl-none space-y-2"
+                      : "bg-white text-gray-800 border border-emerald-100 rounded-tl-none space-y-1.5"
                   }`}
                 >
                   <p className="whitespace-pre-line">{msg.text}</p>
                   
-                  {/* Action row for bot messages: Save to Past Records */}
-                  {msg.sender === "bot" && msg.id !== "welcome" && (
-                    <div className="pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px]">
-                      <button
-                        onClick={() => handleSaveRecommendation(msg.id, msg.text)}
-                        disabled={savedMessageIds[msg.id]}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold transition-all ${
-                          savedMessageIds[msg.id]
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                            : "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 shadow-2xs"
-                        }`}
-                      >
-                        {savedMessageIds[msg.id] ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-600" />
-                            <span>Saved to Records</span>
-                          </>
-                        ) : (
-                          <>
-                            <BookmarkPlus className="w-3 h-3 text-emerald-700" />
-                            <span>Save Advice</span>
-                          </>
-                        )}
-                      </button>
+                  {/* Footer on bot messages: Automatic Save Indicator */}
+                  {msg.sender === "bot" && (
+                    <div className="pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px] text-gray-400">
+                      {msg.id !== "welcome" ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">
+                          <Check className="w-3 h-3" /> Auto-saved to Records
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-emerald-800/80 font-medium">Smart AI Assistant</span>
+                      )}
                       <span className="text-gray-400 text-[9px]">{msg.timestamp}</span>
                     </div>
                   )}
