@@ -53,7 +53,7 @@ export default function App() {
       </main>
 
       {/* Persistent Floating Chatbot */}
-      <ChatWidget />
+      <ChatWidget onNavigateToRecords={() => setActiveTab("records")} />
 
       {/* Footer */}
       <footer className="bg-emerald-950 text-emerald-100/80 mt-auto border-t border-emerald-900/80">

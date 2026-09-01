@@ -1,8 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MessageSquareText, X, Send, Sparkles, Bot, User, CornerDownLeft } from "lucide-react";
+import { MessageSquareText, X, Send, Sparkles, Bot, User, BookmarkPlus, Check, ExternalLink } from "lucide-react";
 import { ChatMessage } from "../types";
 
-export const ChatWidget: React.FC = () => {
+interface ChatWidgetProps {
+  onNavigateToRecords?: () => void;
+}
+
+export const ChatWidget: React.FC<ChatWidgetProps> = ({ onNavigateToRecords }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -14,6 +18,8 @@ export const ChatWidget: React.FC = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [savedMessageIds, setSavedMessageIds] = useState<Record<string, boolean>>({});
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const quickPrompts = [
@@ -85,6 +91,53 @@ export const ChatWidget: React.FC = () => {
     }
   };
 
+  const handleSaveRecommendation = async (botMsgId: string, botText: string) => {
+    // Find preceding user question if available
+    const msgIndex = messages.findIndex((m) => m.id === botMsgId);
+    let questionText = "Farmer AI Advisory";
+    if (msgIndex > 0 && messages[msgIndex - 1].sender === "user") {
+      questionText = messages[msgIndex - 1].text;
+    }
+
+    // Determine crop or title
+    let detectedCrop = "General Advisory";
+    const lower = (questionText + " " + botText).toLowerCase();
+    if (lower.includes("rice") || lower.includes("paddy")) detectedCrop = "Rice";
+    else if (lower.includes("wheat")) detectedCrop = "Wheat";
+    else if (lower.includes("cotton")) detectedCrop = "Cotton";
+    else if (lower.includes("sugarcane")) detectedCrop = "Sugarcane";
+    else if (lower.includes("maize") || lower.includes("corn")) detectedCrop = "Maize";
+    else if (lower.includes("ragi")) detectedCrop = "Ragi";
+    else if (lower.includes("tomato")) detectedCrop = "Tomato";
+    else if (lower.includes("leaf rust") || lower.includes("disease") || lower.includes("blight")) detectedCrop = "Disease Treatment";
+    else if (lower.includes("fertilizer") || lower.includes("npk") || lower.includes("urea")) detectedCrop = "Fertilizer Schedule";
+
+    try {
+      const res = await fetch("/api/records/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: "Farmer AI Chat Log",
+          crop: detectedCrop,
+          details: {
+            source: "Farmer Chat",
+            question: questionText,
+            advice: botText,
+            notes: `Question: "${questionText}"\nAdvice: ${botText.slice(0, 180)}...`,
+          },
+        }),
+      });
+
+      if (res.ok) {
+        setSavedMessageIds((prev) => ({ ...prev, [botMsgId]: true }));
+        setSaveStatus("Saved to Field Records! View in Records tab.");
+        setTimeout(() => setSaveStatus(null), 4000);
+      }
+    } catch (err) {
+      console.error("Failed to save chat recommendation:", err);
+    }
+  };
+
   return (
     <div className="fixed bottom-5 right-5 z-50 font-sans">
       {/* Toggle Button */}
@@ -104,7 +157,7 @@ export const ChatWidget: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="w-80 sm:w-96 h-[480px] bg-white rounded-3xl shadow-2xl border border-emerald-200/80 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="w-80 sm:w-96 h-[500px] bg-white rounded-3xl shadow-2xl border border-emerald-200/80 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
           {/* Top Bar */}
           <div className="bg-emerald-800 text-white px-4 py-3 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2.5">
@@ -128,6 +181,27 @@ export const ChatWidget: React.FC = () => {
             </button>
           </div>
 
+          {/* Save Status Notification Banner */}
+          {saveStatus && (
+            <div className="bg-emerald-100/90 text-emerald-900 text-[11px] px-3.5 py-1.5 flex items-center justify-between border-b border-emerald-200 font-medium">
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-700" />
+                <span>{saveStatus}</span>
+              </div>
+              {onNavigateToRecords && (
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    onNavigateToRecords();
+                  }}
+                  className="text-emerald-800 underline font-bold hover:text-emerald-950 text-[10px]"
+                >
+                  View
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Messages Area */}
           <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-gray-50/70 text-xs">
             {messages.map((msg) => (
@@ -144,20 +218,47 @@ export const ChatWidget: React.FC = () => {
                 </div>
 
                 <div
-                  className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 shadow-sm leading-relaxed ${
+                  className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-sm leading-relaxed ${
                     msg.sender === "user"
                       ? "bg-emerald-700 text-white rounded-tr-none"
-                      : "bg-white text-gray-800 border border-emerald-100 rounded-tl-none"
+                      : "bg-white text-gray-800 border border-emerald-100 rounded-tl-none space-y-2"
                   }`}
                 >
                   <p className="whitespace-pre-line">{msg.text}</p>
-                  <span
-                    className={`text-[9px] block text-right mt-1 ${
-                      msg.sender === "user" ? "text-emerald-200" : "text-gray-400"
-                    }`}
-                  >
-                    {msg.timestamp}
-                  </span>
+                  
+                  {/* Action row for bot messages: Save to Past Records */}
+                  {msg.sender === "bot" && msg.id !== "welcome" && (
+                    <div className="pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px]">
+                      <button
+                        onClick={() => handleSaveRecommendation(msg.id, msg.text)}
+                        disabled={savedMessageIds[msg.id]}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold transition-all ${
+                          savedMessageIds[msg.id]
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 shadow-2xs"
+                        }`}
+                      >
+                        {savedMessageIds[msg.id] ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span>Saved to Records</span>
+                          </>
+                        ) : (
+                          <>
+                            <BookmarkPlus className="w-3 h-3 text-emerald-700" />
+                            <span>Save Advice</span>
+                          </>
+                        )}
+                      </button>
+                      <span className="text-gray-400 text-[9px]">{msg.timestamp}</span>
+                    </div>
+                  )}
+
+                  {msg.sender === "user" && (
+                    <span className="text-[9px] block text-right mt-1 text-emerald-200">
+                      {msg.timestamp}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

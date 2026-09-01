@@ -51,6 +51,9 @@ export interface FarmerRecord {
     soil_type?: string;
     irrigation?: string;
     notes?: string;
+    source?: "Soil AI" | "Farmer Chat" | "Manual Entry" | "Disease Diagnosis";
+    question?: string;
+    advice?: string;
     nitrogen?: number;
     phosphorus?: number;
     potassium?: number;

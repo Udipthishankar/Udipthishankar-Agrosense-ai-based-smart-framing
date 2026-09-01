@@ -203,6 +203,23 @@ export const FarmerRecords: React.FC = () => {
 
                 {/* Details Subgrid */}
                 <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  {record.details?.source && (
+                    <div className="col-span-2 flex items-center justify-between pb-1 mb-1 border-b border-gray-200/60">
+                      <span className="text-gray-500 text-[10px] uppercase font-bold">Origin</span>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          record.details.source === "Farmer Chat"
+                            ? "bg-purple-100 text-purple-800"
+                            : record.details.source === "Soil AI"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {record.details.source === "Farmer Chat" ? "💬 AI Chat Advisory" : record.details.source}
+                      </span>
+                    </div>
+                  )}
+
                   {record.details?.area && (
                     <div>
                       <span className="text-gray-400 block text-[10px] uppercase font-semibold">Plot Area</span>
@@ -229,7 +246,21 @@ export const FarmerRecords: React.FC = () => {
                   )}
                 </div>
 
-                {record.details?.notes && (
+                {record.details?.question && (
+                  <div className="text-xs bg-amber-50/80 p-2.5 rounded-xl border border-amber-200/60 space-y-1">
+                    <span className="text-[10px] font-bold text-amber-900 uppercase block">Farmer Question:</span>
+                    <p className="text-gray-800 font-medium">{record.details.question}</p>
+                  </div>
+                )}
+
+                {record.details?.advice && (
+                  <div className="text-xs bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200/60 space-y-1">
+                    <span className="text-[10px] font-bold text-emerald-900 uppercase block">AI Recommendation:</span>
+                    <p className="text-gray-700 whitespace-pre-line leading-relaxed">{record.details.advice}</p>
+                  </div>
+                )}
+
+                {!record.details?.advice && record.details?.notes && (
                   <p className="text-xs text-gray-600 italic bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100/60">
                     "{record.details.notes}"
                   </p>
