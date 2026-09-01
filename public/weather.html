@@ -108,7 +108,7 @@
                 .catch(error => {
                     console.error('Error:', error);
                     document.getElementById('advisoryText').textContent = 
-                        'Failed to fetch weather. Make sure the backend is running on http://localhost:5000';
+                        'Weather data currently unavailable for this location. Please try another city.';
                 });
         }
 

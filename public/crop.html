@@ -95,7 +95,7 @@
                 btn.disabled = false;
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to get recommendation. Make sure the backend is running on http://localhost:5000');
+                alert('Unable to retrieve crop recommendation. Please check your network connection.');
                 document.getElementById('recommend-btn').textContent = 'Get Crop Recommendation';
                 document.getElementById('recommend-btn').disabled = false;
             }

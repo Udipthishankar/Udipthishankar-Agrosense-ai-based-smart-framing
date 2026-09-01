@@ -601,6 +601,9 @@ Give practical, clear, actionable advice in friendly, supportive language suitab
   }
 });
 
+// Serve public directory for static standalone HTML pages & styles
+app.use(express.static(path.join(process.cwd(), "public")));
+
 // ==================== HEALTH CHECK ====================
 app.get("/api/health", (req, res) => {
   return res.json({

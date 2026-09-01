@@ -1,5 +1,15 @@
 [
   {
+    "id": 2,
+    "location": "Bengaluru East",
+    "crop": "Ragi",
+    "timestamp": "2026-09-01T02:36:40.877Z",
+    "details": {
+      "area": "2 acres",
+      "soil_type": "Red Sandy Loam"
+    }
+  },
+  {
     "id": 1,
     "location": "Bengaluru",
     "crop": "Ragi",
